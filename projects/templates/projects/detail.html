@@ -90,19 +90,19 @@ limitations under the License.
    </div>
 	</div>
 	
-	<div id="detailTabs-2">
-    <table id="casesGrid" class="scroll" cellpadding="0" cellspacing="0"></table>
-    <div id="pager2" class="scroll" style="text-align:center;"></div>
+    <div id="detailTabs-2">
+      <table id="casesGrid" class="scroll" cellpadding="0" cellspacing="0"></table>
+      <div id="pager2" class="scroll" style="text-align:center;"></div>
     
-    <a href="javascript:newCase();">New Test Case</a> |
-    <a href="javascript:doneEdit();">Save All</a> |
-    <a href="javascript:editSelected();">Edit Selected</a>  |
-    <a href="javascript:deleteSelected();">Delete Selected</a>
+      <a href="javascript:newCase();">New Test Case</a> |
+      <a href="javascript:doneEdit();">Save All</a> |
+      <a href="javascript:editSelected();">Edit Selected</a>  |
+      <a href="javascript:deleteSelected();">Delete Selected</a>
     
-    <span style="float:right;padding:5px;"><a href="javascript:viewDocs();">View File</a> |
-    <a href="javascript:bugLinks();">Bug Links</a></span>
+      <span style="float:right;padding:5px;"><a href="javascript:viewDocs();">View File</a> |
+      <a href="javascript:bugLinks();">Bug Links</a></span>
     
-	</div>
+    </div>
 	
 	<div id="detailTabs-3">
 	  <table style="width:100%">
@@ -116,17 +116,21 @@ limitations under the License.
 	    </tr>
 	    </table>
 	</div>
-</div>
+ </div>
 
 <div id="sourceDialog" title="Source" style="display:none">
   <div id="sourceTabs" style="font-size:12px;">
       <ul>
           <li><a href="#sourceTabs-1"><span>Source</span></a></li>
           <li><a href="#sourceTabs-2"><span>Docs</span></a></li>
+	  <li><a href="#sourceTabs-3"><span>Statistic</span></a></li>
       </ul>
       <div id="sourceTabs-1" style="overflow:auto">
       </div>
       <div id="sourceTabs-2" style="overflow:auto">
+      </div>
+      <div id="sourceTabs-3" style="overflow:auto">
+	<table id="statGrid" class="scroll" cellpadding="0" cellspacing="0"></table>
       </div>
   </div>
 </div>
@@ -167,6 +171,7 @@ limitations under the License.
       //cleaning up dialog contents
       $("#sourceTabs-1").html("");
       $("#sourceTabs-2").html("");
+  
      
       //open source dialog
       $("#sourceTabs").tabs({ selected: 0 });
@@ -200,7 +205,14 @@ limitations under the License.
          }
        }
  	     
- 	   });
+ 	   });   
+	   
+      // resize Statistic table
+      var nw = parseInt($("#sourceDialog")[0].clientWidth) - 75;
+      var dil = $("#sourceDialog")[0].clientWidth;
+      jQuery("#statGrid").setGridWidth(nw);  
+      var hh = parseInt($("#sourceDialog")[0].clientHeight) - 150;
+      jQuery("#statGrid").setGridHeight(hh);
      
   };
   
@@ -331,6 +343,23 @@ limitations under the License.
         caption: "Test Cases"
     });
     
+    var	getCases = new function(){
+          
+    }
+
+// This is the actual grid for test stat
+    $("#statGrid").jqGrid({
+        url:'/projects/get_stat?id={{ id }}', 
+        datatype: "json",
+        colNames:['Build Number','Status','Results'],
+        colModel:[
+            {name:'Build Number',index:'buildNumber',align:"center", width:20},
+	    {name:'Status',index:'status',align:"center", width:40},
+	    {name:'Results',index:'results',align:"center", width:40},
+        ],
+        caption: "Test Statistic"
+    });    
+    
     //Ensure that the grid is a reasonable size based on the window
     var resizeGrid = function(){
       var nw = parseInt($("#layout-center")[0].style.width) -50;
@@ -338,12 +367,15 @@ limitations under the License.
     
       var hh = parseInt($("#header")[0].style.height);
       var nw = parseInt($("#layout-center")[0].style.height) - (hh +150);
-      jQuery("#casesGrid").setGridHeight(nw);
+      jQuery("#casesGrid").setGridHeight(nw);  
+      
     }
+    
     
     resizeGrid();
     window.onresize = resizeGrid;
  
   });
+ 
 </script>
 {% endblock %}

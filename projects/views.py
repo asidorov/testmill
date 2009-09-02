@@ -294,11 +294,9 @@ def get_file_source(request):
     
     url = to_host+to_project.strip()+to_file.strip()
     
-    #print "Accessing URL for file source", url
-    
+    #print "Accessing URL for file source", url  
     response = urllib2.urlopen(url)
     html = response.read()
-    
     hl = highlight(html, PythonLexer(), HtmlFormatter())
     
     return HttpResponse(hl)
