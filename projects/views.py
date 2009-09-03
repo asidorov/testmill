@@ -323,3 +323,25 @@ def detail(request,id):
     context_instance.autoescape=False
 
     return render_to_response('projects/detail.html',{'row':doc, 'id':id, 'ticket':TICKET}, context_instance)
+
+# Update tests statistic
+@login_required
+def update_test_stat(request):
+    docs = COUCHDB['testmill']
+    id = request.POST['id']
+    try:
+        doc = docs[id]
+    except ResourceNotFound:
+        raise Http404        
+    cases = doc['.cases']
+    name = doc['name']
+    # Get the number or runs
+    #
+    url = HUDSON+'/view/All/job/'+name+';
+    url = url.replace(' ', '%20')
+    for i in cases:
+        fileName = i['file']
+        print(fileName)
+        
+    return HttpResponse('Stat is updated')
+        

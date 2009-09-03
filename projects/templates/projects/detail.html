@@ -100,7 +100,8 @@ limitations under the License.
       <a href="javascript:deleteSelected();">Delete Selected</a>
     
       <span style="float:right;padding:5px;"><a href="javascript:viewDocs();">View File</a> |
-      <a href="javascript:bugLinks();">Bug Links</a></span>
+      <a href="javascript:bugLinks();">Bug Links</a> | 
+      <a href="javascript:updateStat();">Update Statistic</a></span>
     
     </div>
 	
@@ -294,6 +295,15 @@ limitations under the License.
       window.lastsel2=id;
     }
   };
+  
+  // Update statistic
+  var updateStat = function(){
+  
+    $.post("/projects/update_stat", { id:'{{ id }}'},  function(data){ 
+	    alert(data);
+  	    return true;
+  	  });
+  }
   
   //execute when loaded
 	$(function(){
