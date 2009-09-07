@@ -26,5 +26,6 @@ urlpatterns = patterns('testmill.projects.views',
     (r'^tree','tree'),
     (r'^get_file_source', 'get_file_source'),
     (r'^update_stat', 'update_test_stat'),
+    (r'^get_test_stat', 'get_test_stat'),
     (r'^$','index'),
 )

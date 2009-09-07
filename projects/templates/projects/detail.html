@@ -171,8 +171,7 @@ limitations under the License.
       
       //cleaning up dialog contents
       $("#sourceTabs-1").html("");
-      $("#sourceTabs-2").html("");
-  
+      $("#sourceTabs-2").html(""); 
      
       //open source dialog
       $("#sourceTabs").tabs({ selected: 0 });
@@ -207,6 +206,20 @@ limitations under the License.
        }
  	     
  	   });   
+    
+        $("#statGrid").jqGrid({
+        url:"/projects/get_test_stat?id={{ id }}&file="+rowObj['file'], 
+        datatype: "json",
+        colNames:['Build Number','Status','Results Link'],
+        colModel:[
+            {name:'Build Number',index:'buildNumber',align:"center", width:40},
+            {name:'Status',index:'status',align:"center", width:40},
+            {name:'Results Link',index:'results',align:"center", width:40},
+        ],
+        rowNum: 100000,
+        loadComplete: hlStatus,
+        caption: "Test Statistic"
+    }); 
 	   
       // resize Statistic table
       var nw = parseInt($("#sourceDialog")[0].clientWidth) - 75;
@@ -254,8 +267,13 @@ limitations under the License.
   
   var hlStatus = function(){
     $("td[title='PASS']").css("background","lightgreen");
+    $("td[title='PASSED']").css("background","lightgreen");
     $("td[title='FAIL']").css("background","#F08080");
+    $("td[title='FAILED']").css("background","#F08080");
     $("td[title='BLOCKED']").css("background","lightyellow");
+    $("td[title='REGRESSION']").css("background","#FFFF00");
+    $("td[title='FIXED']").css("background","#0000FF");
+    
   };
   
   var newCase = function(){
@@ -357,19 +375,6 @@ limitations under the License.
           
     }
 
-// This is the actual grid for test stat
-    $("#statGrid").jqGrid({
-        url:'/projects/get_stat?id={{ id }}', 
-        datatype: "json",
-        colNames:['Build Number','Status','Results'],
-        colModel:[
-            {name:'Build Number',index:'buildNumber',align:"center", width:20},
-	    {name:'Status',index:'status',align:"center", width:40},
-	    {name:'Results',index:'results',align:"center", width:40},
-        ],
-        caption: "Test Statistic"
-    });    
-    
     //Ensure that the grid is a reasonable size based on the window
     var resizeGrid = function(){
       var nw = parseInt($("#layout-center")[0].style.width) -50;

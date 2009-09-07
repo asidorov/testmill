@@ -1,7 +1,7 @@
 #   Copyright 2009, Adam Christian (adam@adamchristian.com) and Slide, Inc.
 #	
 #   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
+#   you may not use this file except in compliance with the .appendLicense.
 #   You may obtain a copy of the License at
 #	
 #           http://www.apache.org/licenses/LICENSE-2.0
@@ -275,6 +275,8 @@ def new(request):
             'wiki':'',
             'cli':'',
             '.cases':None,
+            'lastBuild':1,
+            '.statistic':None
         })
         return HttpResponseRedirect(u"/projects/doc/%s/" % a)
     return render_to_response('projects/new.html',{'rows':docs})
@@ -293,7 +295,7 @@ def get_file_source(request):
     to_file = file_path
     
     url = to_host+to_project.strip()+to_file.strip()
-    
+    print url
     #print "Accessing URL for file source", url
     url = url.replace(" ", "%20")
     response = urllib2.urlopen(url)
@@ -335,13 +337,88 @@ def update_test_stat(request):
         raise Http404        
     cases = doc['.cases']
     name = doc['name']
+    #try:
+    #    l = len(doc['.statistic'])
+    #    print("l==="+str(l))
+    #except:
+    doc['.statistic'] = [] 
     # Get the number or runs
     #
-    url = HUDSON+'/view/All/job/'+name+';
+    url = HUDSON+'view/All/job/'+name+'/api/json'
     url = url.replace(' ', '%20')
-    for i in cases:
-        fileName = i['file']
-        print(fileName)
-        
+    req = urllib2.urlopen(url)
+    response = req.read()
+    response = simplejson.loads(response)
+    lastBuild = int(response['lastCompletedBuild']['number'])
+    docLastBuild = int(doc['lastBuild'])
+    if(lastBuild > docLastBuild):
+        for i in range( docLastBuild, lastBuild):
+            # Get child reports link
+            url = HUDSON+'view/All/job/'+name+'/'+str(i)+'/testReport/api/json'
+            url = url.replace(' ', '%20')
+            try:
+                req = urllib2.urlopen(url)
+                response = req.read()
+                response = simplejson.loads(response)
+                try:
+                    child_url =  str(response['childReports'][0]['child']['url'])
+                    child_url = child_url.replace("./", "")
+                    # Get test results from this build
+                    child_url = child_url + 'testReport/api/json'
+                    # Get the list of failed test cases
+                    try:
+                        req = urllib2.urlopen(child_url)
+                        response = req.read()
+                        response = simplejson.loads(response)
+                        cases_run = response['suites'][0]['cases']
+                        results = []
+                        for case_run in cases_run:                         
+                            for case in cases:
+                                fileName = case['file']
+                                fileName = fileName.replace(".py", "")                              
+                                if (str(case_run['name']) == fileName):
+                                    child = {
+                                        'name': fileName,
+                                        'status': str(case_run['status'])
+                                    }
+                                    print str(child)
+                                    results.append(child)
+                        finalRes = {'buildNumber': i, 'testResults': results} 
+                        doc['.statistic'].append(finalRes)                
+                        doc['lastBuild'] = i
+                        docs[id] = doc
+                    except:
+                        raise Exception('Stat wasnt added to DB!')
+                except: # case when build is failed
+                    pass
+            except: # case when build doesn't exist
+                pass
+
     return HttpResponse('Stat is updated')
         
+# Return test statistic
+def get_test_stat(request):
+    docs = COUCHDB['testmill']
+    id = request.GET['id']
+    fileName = str(request.GET['file'])
+    fileName = fileName.replace('.py', '')
+    doc = docs[id]
+    c_dict = {}
+    c_dict['page'] = "1"
+    c_dict['total'] = 1
+    c_dict['records'] = str(len(doc['.statistic']))
+    c_dict['rows'] = []
+    c_dict['userdata'] = {}
+    for build in doc['.statistic']:
+    #for k in range(len(doc['.statistic']), 0, -1):
+        for cases in build['testResults']:
+    #    for cases in doc['.statistic'][k]:
+            if str(cases['name']) == fileName:
+                bn = str(build['buildNumber'])
+     #           bn = str(doc['.statistic'][k]['buildNumber'])
+                r_dict = {}
+                r_dict['id'] = cases['status']
+                r_dict['cell'] = [bn, cases['status'], 'TBD']
+                c_dict['rows'].append(r_dict)
+    print simplejson.dumps(c_dict)
+    return HttpResponse(simplejson.dumps(c_dict))
