@@ -101,7 +101,8 @@ limitations under the License.
     
       <span style="float:right;padding:5px;"><a href="javascript:viewDocs();">View File</a> |
       <a href="javascript:bugLinks();">Bug Links</a> | 
-      <a href="javascript:updateStat();">Update Statistic</a></span>
+      <a href="javascript:updateStat(false);">Update Statistic</a> |
+      <a href="javascript:updateStat(true);">Completely Update Statistic</a></span>
     
     </div>
 	
@@ -136,6 +137,11 @@ limitations under the License.
   </div>
 </div>
 
+<div id="stacktraceDialog" title="Failure details" style="display:none;font-size:12px;">
+  <div id="stacktraceContent" style="overflow:auto, font-size:12px;">
+  </div>
+</div>
+
 
 <script type="text/javascript" charset="utf-8">
   var replaceAll = function (OldString, FindString, ReplaceString) {
@@ -153,8 +159,8 @@ limitations under the License.
   var viewDocs = function(){
      var sRow = jQuery('#casesGrid').getGridParam('selrow');
      var rowObj = jQuery("#casesGrid").getRowData(sRow);
-     
-     if (rowObj['file'] == ""){
+     var selFile = rowObj['file'];
+     if (selFile == ""){
        alert("The selected row doesn't have a file to display.");
        return;
      }
@@ -165,7 +171,7 @@ limitations under the License.
          $(this).dialog('close'); 
          }
         },
-        height: 650,
+        height: 500,
         width: 500,
       });
       
@@ -178,7 +184,7 @@ limitations under the License.
       $("#sourceDialog")[0].style.display = "";
       $("#sourceDialog").dialog('open');
      
-     $.post("/projects/get_file_source", { file_path: rowObj['file'], id: "{{ id }}"  }, function(data){ 
+     $.post("/projects/get_file_source", { file_path: selFile, id: "{{ id }}"  }, function(data){ 
  	     $("#sourceTabs-1")[0].innerHTML = data;
  	     
        // create the docs page from comments in html I just appended
@@ -206,9 +212,10 @@ limitations under the License.
        }
  	     
  	   });   
-    
+        jQuery("#statGrid").setGridParam({url:"/projects/get_test_stat?id={{ id }}&file="+selFile})
+        jQuery("#statGrid").trigger("reloadGrid");
         $("#statGrid").jqGrid({
-        url:"/projects/get_test_stat?id={{ id }}&file="+rowObj['file'], 
+        url:"/projects/get_test_stat?id={{ id }}&file="+selFile, 
         datatype: "json",
         colNames:['Build Number','Status','Results Link'],
         colModel:[
@@ -315,13 +322,34 @@ limitations under the License.
   };
   
   // Update statistic
-  var updateStat = function(){
+  var updateStat = function(flag){
   
-    $.post("/projects/update_stat", { id:'{{ id }}'},  function(data){ 
+    $.post("/projects/update_stat", { id:'{{ id }}', 'full':flag},  function(data){ 
 	    alert(data);
   	    return true;
   	  });
   }
+
+    // Show stacktrace dialog
+    var showStackTrace = function(fileName, buildNumber){
+    
+       $("#stacktraceDialog").dialog({ 
+        autoOpen: false, 
+        buttons: { 'Ok': function() {
+            $(this).dialog('close'); 
+            }
+        },
+        height: 500,
+        width: 600,
+      });
+    
+        $("#stacktraceDialog")[0].style.display = "";
+        $("#stacktraceDialog")[0].innerHTML = "Loading...";
+        $("#stacktraceDialog").dialog('open');
+        $.post("/projects/get_error_stacktrace", { id: "{{ id }}", file:fileName, build: buildNumber},   function(data){ 
+            $("#stacktraceDialog")[0].innerHTML = data;
+	    });
+    }  
   
   //execute when loaded
 	$(function(){

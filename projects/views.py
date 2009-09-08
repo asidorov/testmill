@@ -275,7 +275,7 @@ def new(request):
             'wiki':'',
             'cli':'',
             '.cases':None,
-            'lastBuild':1,
+            'lastBuild':0,
             '.statistic':None
         })
         return HttpResponseRedirect(u"/projects/doc/%s/" % a)
@@ -295,7 +295,6 @@ def get_file_source(request):
     to_file = file_path
     
     url = to_host+to_project.strip()+to_file.strip()
-    print url
     #print "Accessing URL for file source", url
     url = url.replace(" ", "%20")
     response = urllib2.urlopen(url)
@@ -331,17 +330,21 @@ def detail(request,id):
 def update_test_stat(request):
     docs = COUCHDB['testmill']
     id = request.POST['id']
+    isFull = request.POST['full']
     try:
         doc = docs[id]
     except ResourceNotFound:
         raise Http404        
     cases = doc['.cases']
     name = doc['name']
-    #try:
-    #    l = len(doc['.statistic'])
-    #    print("l==="+str(l))
-    #except:
-    doc['.statistic'] = [] 
+    if (isFull == 'false'):
+        try:
+            l = len(doc['.statistic'])
+        except:
+            doc['.statistic'] = []
+    else:
+        doc['lastBuild'] = 0
+        doc['.statistic'] = []
     # Get the number or runs
     #
     url = HUDSON+'view/All/job/'+name+'/api/json'
@@ -352,7 +355,7 @@ def update_test_stat(request):
     lastBuild = int(response['lastCompletedBuild']['number'])
     docLastBuild = int(doc['lastBuild'])
     if(lastBuild > docLastBuild):
-        for i in range( docLastBuild, lastBuild):
+        for i in range( docLastBuild, lastBuild + 1):
             # Get child reports link
             url = HUDSON+'view/All/job/'+name+'/'+str(i)+'/testReport/api/json'
             url = url.replace(' ', '%20')
@@ -379,9 +382,9 @@ def update_test_stat(request):
                                 if (str(case_run['name']) == fileName):
                                     child = {
                                         'name': fileName,
-                                        'status': str(case_run['status'])
+                                        'status': str(case_run['status']),
+                                        'error': str(case_run['errorStackTrace'])
                                     }
-                                    print str(child)
                                     results.append(child)
                         finalRes = {'buildNumber': i, 'testResults': results} 
                         doc['.statistic'].append(finalRes)                
@@ -397,6 +400,7 @@ def update_test_stat(request):
     return HttpResponse('Stat is updated')
         
 # Return test statistic
+@login_required
 def get_test_stat(request):
     docs = COUCHDB['testmill']
     id = request.GET['id']
@@ -409,16 +413,35 @@ def get_test_stat(request):
     c_dict['records'] = str(len(doc['.statistic']))
     c_dict['rows'] = []
     c_dict['userdata'] = {}
-    for build in doc['.statistic']:
-    #for k in range(len(doc['.statistic']), 0, -1):
-        for cases in build['testResults']:
-    #    for cases in doc['.statistic'][k]:
+    for k in range(len(doc['.statistic'])-1, -1, -1):
+    #for build in doc['.statistic']:
+    #    for cases in build['testResults']:
+        for cases in doc['.statistic'][k]['testResults']:
             if str(cases['name']) == fileName:
-                bn = str(build['buildNumber'])
-     #           bn = str(doc['.statistic'][k]['buildNumber'])
+     #           bn = str(build['buildNumber'])
+                bn = str(doc['.statistic'][k]['buildNumber'])
                 r_dict = {}
                 r_dict['id'] = cases['status']
-                r_dict['cell'] = [bn, cases['status'], 'TBD']
+                if (cases['status']=='FAILED' or cases['status']=='REGRESSION'):
+                    r_dict['cell'] = [bn, cases['status'], '<a href="javascript:showStackTrace(\''+fileName+'\', '+bn+')"> Show details </a>']
+                else:
+                    r_dict['cell'] = [bn, cases['status'], '&nbsp;']
                 c_dict['rows'].append(r_dict)
-    print simplejson.dumps(c_dict)
     return HttpResponse(simplejson.dumps(c_dict))
+
+# Get error stacktrace
+@login_required
+def get_error_stacktrace(request):
+    docs = COUCHDB['testmill']
+    id = request.POST['id']
+    doc = docs[id]
+    fileName = str(request.POST['file'])
+    buildNumber = int(request.POST['build'])
+    resp = ''
+    for build in doc['.statistic']:
+        if build['buildNumber'] == buildNumber:
+            for case in build['testResults']:
+                if case['name'] == fileName:
+                    resp = highlight(case['error'], PythonLexer(), HtmlFormatter())
+                    #resp = case['error']
+    return HttpResponse(resp)
