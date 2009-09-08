@@ -376,14 +376,15 @@ limitations under the License.
     $("#casesGrid").jqGrid({
         url:'/projects/get_cases?id={{ id }}', 
         datatype: "json",
-        colNames:['ID','Assertion','File','Bugs','Comments','Status'],
+        colNames:['ID','Assertion','File','Bugs','Comments','Status', 'Current Status'],
         colModel:[
             {name:'id',index:'id',align:"center", width:20},
             {name:'assertion',index:'assertion', sortable:false,editable: true,edittype:"textarea", editoptions:{rows:"5",cols:"25"}},
             {name:'file',index:'file',editable: true},
-        	  {name:'bugs',index:'bugs', align:"center", width:50,sortable:false, editable: true},
+        	{name:'bugs',index:'bugs', align:"center", width:50,sortable:false, editable: true},
             {name:'comments',index:'comments',sortable:false,editable: true,edittype:"textarea", editoptions:{rows:"5",cols:"25"}},
-            {name:'status',index:'status', width:40, align:"center", editable: true, edittype:"select", editoptions:{value:"NONE:NONE;PASS:PASS;FAIL:FAIL;BLOCKED:BLOCKED"}},
+            {name:'status',index:'status', width:55, align:"center", editable: true, edittype:"select", editoptions:{value:"NONE:NONE;PASSED:PASSED;FAILED:FAILED;BLOCKED:BLOCKED"}},
+            {name:'currentStatus',index:'currentStatus', align:"center", width:55,sortable:false, editable: false},
         ],
         editurl: "/projects/save_cases?id={{ id }}",
         ondblClickRow: function(id){ 

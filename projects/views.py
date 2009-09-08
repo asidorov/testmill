@@ -192,9 +192,17 @@ def get_cases(request):
     c_dict['userdata'] = {}
     
     for case in doc['.cases']:
+        caseName = case['file']
+        caseName = caseName.replace('.py', '')
+        # get the current status of the test
+        lastBuildNum = doc['lastBuild']
+        currStatus = 'None'
+        for i in doc['.statistic'][len(doc['.statistic'])-1]['testResults']:
+            if i['name'] == caseName:
+                currStatus = i['status']
         r_dict = {}
         r_dict['id'] = case['id']
-        r_dict['cell'] = [case['id'], case['assertion'], case['file'], case['bugs'], case['comments'], case['status']]
+        r_dict['cell'] = [case['id'], case['assertion'], case['file'], case['bugs'], case['comments'], case['status'], currStatus]
         c_dict['rows'].append(r_dict)
             
     return HttpResponse(simplejson.dumps(c_dict))
@@ -445,3 +453,6 @@ def get_error_stacktrace(request):
                     resp = highlight(case['error'], PythonLexer(), HtmlFormatter())
                     #resp = case['error']
     return HttpResponse(resp)
+
+
+    
