@@ -391,7 +391,8 @@ def update_test_stat(request):
                                     child = {
                                         'name': fileName,
                                         'status': str(case_run['status']),
-                                        'error': str(case_run['errorStackTrace'])
+                                        'error': str(case_run['errorStackTrace']),
+                                        'age': case_run['age']
                                     }
                                     results.append(child)
                         finalRes = {'buildNumber': i, 'testResults': results} 
@@ -454,5 +455,33 @@ def get_error_stacktrace(request):
                     #resp = case['error']
     return HttpResponse(resp)
 
-
+# Get error stacktrace
+@login_required
+def get_tbr_cases(request):
+    docs = COUCHDB['testmill']
+    id = request.GET['id']
+    doc = docs[id]
+    try:
+        l = len(doc['.cases'])
+    except:
+        doc['.cases'] = []
+    c_dict = {}
+    c_dict['page'] = "1"
+    c_dict['total'] = 1
+    c_dict['records'] = str(len(doc['.cases']))
+    c_dict['rows'] = []
+    c_dict['userdata'] = {}
+    
+    for case in doc['.cases']:
+        caseName = case['file']
+        caseName = caseName.replace('.py', '')
+        # get the current status of the test
+        for i in doc['.statistic'][len(doc['.statistic'])-1]['testResults']:
+            if ((i['name'] == caseName) and ((i['status'] == 'FAILED') or (i['status']== 'REGRESSION'))):
+                r_dict = {}
+                r_dict['id'] = case['id']
+                r_dict['cell'] = [case['file'], case['bugs'], case['comments'], i['status'], i['age']]
+                c_dict['rows'].append(r_dict)
+            
+    return HttpResponse(simplejson.dumps(c_dict))
     

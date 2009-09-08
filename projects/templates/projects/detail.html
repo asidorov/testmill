@@ -1,7 +1,7 @@
 <!--
 Copyright 2009, Adam Christian (adam@adamchristian.com) and Slide, Inc.
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the "License");reloadGrid
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
@@ -26,6 +26,7 @@ limitations under the License.
 		<li><a href="#detailTabs-1">Details</a></li>
 		<li><a href="#detailTabs-2">Cases</a></li>
 		<li><a href="#detailTabs-3">Status</a></li>
+        <li><a href="#detailTabs-4">TBR Cases</a></li>
 	</ul>
 	<div id="detailTabs-1">
     <table style="padding:5px;width:75%table-layout:fixed">
@@ -118,7 +119,17 @@ limitations under the License.
 	    </tr>
 	    </table>
 	</div>
+    <div id="detailTabs-4">
+      <table id="tbrGrid" class="scroll" cellpadding="0" cellspacing="0"></table>
+      <div id="pager4" class="scroll" style="text-align:center;"></div>
+    
+      <a href="javascript:sendTask();">Send Checked Cases to...</a> |
+         
+    </div>    
+    
  </div>
+
+
 
 <div id="sourceDialog" title="Source" style="display:none">
   <div id="sourceTabs" style="font-size:12px;">
@@ -324,7 +335,9 @@ limitations under the License.
   // Update statistic
   var updateStat = function(flag){
   
-    $.post("/projects/update_stat", { id:'{{ id }}', 'full':flag},  function(data){ 
+    $.post("/projects/update_stat", { id:'{{ id }}', 'full':flag},  function(data){
+        jQuery("#casesGrid").trigger("reloadGrid");
+        jQuery("#tbrGrid").trigger("reloadGrid");
 	    alert(data);
   	    return true;
   	  });
@@ -350,6 +363,13 @@ limitations under the License.
             $("#stacktraceDialog")[0].innerHTML = data;
 	    });
     }  
+
+// Show test selected test cases
+var sendTask = function(){
+    var s;
+     s = jQuery("#tbrGrid").getGridParam('selarrrow');
+     alert(s); 
+}
   
   //execute when loaded
 	$(function(){
@@ -400,6 +420,24 @@ limitations under the License.
         caption: "Test Cases"
     });
     
+    // This is the actual grid for TBR page
+    $("#tbrGrid").jqGrid({
+        url:'/projects/get_tbr_cases?id={{ id }}', 
+        datatype: "json",
+        colNames:['File','Bugs', 'Comments', 'Current Status', 'Age'],
+        colModel:[
+        
+            {name:'file',index:'file',editable: true},
+        	{name:'bugs',index:'bugs', align:"center", width:50,sortable:false, editable: false},
+            {name:'comments',index:'comments',sortable:false,editable: false},
+            {name:'currentStatus',index:'currentStatus', align:"center", width:55,sortable:true, editable: false},
+            {name:'age',index:'age', align:"center", width:40,sortable:true, editable: false}
+        ],
+        loadComplete: hlStatus,
+        multiselect: true, 
+        caption: "TBR Test Cases"
+    });
+    
     var	getCases = new function(){
           
     }
@@ -408,10 +446,12 @@ limitations under the License.
     var resizeGrid = function(){
       var nw = parseInt($("#layout-center")[0].style.width) -50;
       jQuery("#casesGrid").setGridWidth(nw);
+      jQuery("#tbrGrid").setGridWidth(nw);
     
       var hh = parseInt($("#header")[0].style.height);
       var nw = parseInt($("#layout-center")[0].style.height) - (hh +150);
       jQuery("#casesGrid").setGridHeight(nw);  
+      jQuery("#tbrGrid").setGridHeight(nw);
       
     }
     
