@@ -507,7 +507,9 @@ def send_task_email(request):
     for i in range(0, len(recepients)-1):
         message += str((recepients[i]) + ', ')
         recep.append(recepients[i])
-    message += '\n'
+    # Also add sender for tracking tasks
+    recep.append(sender)
+    message +=(sender + '\n')
     message += ('From: '+sender+ '\n')
     message += ('Subject: Failure analyze task \n\n')
     for i in range(0, len(files)-1):
