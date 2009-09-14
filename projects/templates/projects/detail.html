@@ -31,10 +31,10 @@ limitations under the License.
 	<div id="detailTabs-1">
     <table style="padding:5px;width:75%table-layout:fixed">
     {% for k,v in row.items %}
-      {% if "."|notin:k %}
-      {% if "_"|notin:k %}
+        {% if "."|notin:k %}
+        {% if "_"|notin:k %}
     
-       <tr>
+        <tr>
           <td valign="top" style="font-size:12px;"> <b>{{ k|capfirst }}:<b> </td>
           <td style="font-size:12px;background:#eee;">{{ v }}</td>
         <tr>
@@ -42,7 +42,6 @@ limitations under the License.
       {% endif %}
           
     {% endfor %}
-    
     </table>
     <a href="#" onclick="$('#editor')[0].style.height = '';">Edit</a>
     
@@ -103,7 +102,7 @@ limitations under the License.
       <span style="float:right;padding:5px;"><a href="javascript:viewDocs();">View File</a> |
       <a href="javascript:bugLinks();">Bug Links</a> | 
       <a href="javascript:updateStat(false);">Update Statistic</a> |
-      <a href="javascript:updateStat(true);">Completely Update Statistic</a></span>
+      <a href="javascript:updateStat(true);">Completely Update Statistic</a> </span>
     
     </div>
 	
@@ -150,6 +149,26 @@ limitations under the License.
 
 <div id="stacktraceDialog" title="Failure details" style="display:none;font-size:12px;">
   <div id="stacktraceContent" style="overflow:auto, font-size:12px;">
+  </div>
+</div>
+
+<div id="taskDialog" title="Send selected test cases for analyze to..." style="display:none;font-size:12px;">
+  <div id="taskContent" style="overflow:auto, font-size:12px;">
+  <input type='checkbox' name='recepient' value='exapl@mail.com' />Alexey Sidorov<br/>
+  <input type='checkbox' name='recepient' value='exapl@mail.com' />Victor Korolkevich<br/>
+  <input type='checkbox' name = 'recepient' value='exapl@mail.com' />Alexander Chystyakov<br/>
+   or <br/>
+  <input type='checkbox' value='testauthor' disabled='disabled'/>Tets's Author<br/>
+  <p>Select e-mail account</p><br/>
+  <select name="account">
+    <option value="exapl@mail.com">exapl@mail.com
+    <option value="exapl@mail.com" disabled='disabled' />exapl@mail.com
+    <option value="exapl@mail.com" disabled='disabled' />exapl@mail.com
+  </select>
+
+  <p>Input the password of the owners email</p>
+  <input type='password' id='pwd'/>
+
   </div>
 </div>
 
@@ -245,7 +264,6 @@ limitations under the License.
       jQuery("#statGrid").setGridWidth(nw);  
       var hh = parseInt($("#sourceDialog")[0].clientHeight) - 150;
       jQuery("#statGrid").setGridHeight(hh);
-     
   };
   
   //Display a dialog with links to the bugs attached to the test case
@@ -367,8 +385,45 @@ limitations under the License.
 // Show test selected test cases
 var sendTask = function(){
     var s;
-     s = jQuery("#tbrGrid").getGridParam('selarrrow');
-     alert(s); 
+     testObj = jQuery("#tbrGrid").getGridParam('selarrrow');
+         $("#taskDialog").dialog({ 
+       autoOpen: false, 
+       buttons: { 
+            'Send': function() {
+                    who = $("input[name='recepient']").fieldArray();
+                    tetsNames = '';
+                    for (var i in testObj)
+                    {tetsNames+=(testObj[i]+';')}
+                    recepients = '';
+                    for (var i in who)
+                    {recepients += (who[i]+';')}
+                    var sender = $("select[name='account']").fieldArray()[0];
+                    password = $('#pwd').val();
+                    $.post("/projects/send_task_email", { id: '{{ id }}', tests: tetsNames, recepients: recepients, sender: sender, password: password },  function(data){
+                        alert(data);
+                    });
+                
+                
+                $(this).dialog('close'); 
+            },
+            'Cancel': function() {
+                $(this).dialog('close');
+            },
+        },
+        height: 400,
+        width: 300
+      });
+      
+     
+      //open source dialog
+    //$("#taskDialog")[0].innerHTML = 'selected test are'+s;
+      $("#taskDialog")[0].style.display = "";
+      $("#taskDialog").dialog('open');
+    
+     /*$.post("/projects/send_task", { id: "{{ id }}" },   function(data){ 
+        
+	  });*/
+    //alert (typeof(s));
 }
   
   //execute when loaded

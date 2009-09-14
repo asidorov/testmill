@@ -27,6 +27,7 @@ from pygments.formatters import HtmlFormatter
 import urllib2
 import feedparser
 import couchdb
+import testmill.projects.mailsender as mailsender
 
 # These servers aren't necessary they just enhance the experience
 # Access all the defined servers from the DB
@@ -479,9 +480,50 @@ def get_tbr_cases(request):
         for i in doc['.statistic'][len(doc['.statistic'])-1]['testResults']:
             if ((i['name'] == caseName) and ((i['status'] == 'FAILED') or (i['status']== 'REGRESSION'))):
                 r_dict = {}
-                r_dict['id'] = case['id']
+                r_dict['id'] = case['file']
                 r_dict['cell'] = [case['file'], case['bugs'], case['comments'], i['status'], i['age']]
                 c_dict['rows'].append(r_dict)
             
     return HttpResponse(simplejson.dumps(c_dict))
     
+# Generate the task e-mail
+def send_task_email(request):
+    docs = COUCHDB['testmill']
+    id = request.POST['id']
+    doc = docs[id]
+    fileNames = str(request.POST['tests'])
+    recepients = str(request.POST['recepients'])
+    sender = str(request.POST['sender'])
+    password = str(request.POST['password'])
+    
+    # Get the number of the last build
+    lastBuild = doc['lastBuild']
+    # Form the list of the tests
+    files = fileNames.split(";")
+    recepients = recepients.split(";")
+    print 'recepients=='+str(recepients)
+    recep = []
+    message = 'To: '
+    for i in range(0, len(recepients)-1):
+        message += str((recepients[i]) + ', ')
+        recep.append(recepients[i])
+    message += '\n'
+    message += ('From: '+sender+ '\n')
+    message += ('Subject: Failure analyze task \n\n')
+    for i in range(0, len(files)-1):
+        file = files[i]
+        main_mess = message
+        main_mess += 'Hi there! \n'
+        main_mess += ('Please review the following failured test case: '+ file + '\n')
+        main_mess += ('Test project: '+doc['name'] + '\n')
+        main_mess += ('Test case is located in: ' + doc['location']+ '\n')
+        main_mess += ('The buld number is: '+str(doc['lastBuild'])+'\n')
+        main_mess += ('Command line: '+doc['cli']+'\n')
+        file = file.replace('.py','')
+        for test in doc['.statistic'][len(doc['.statistic'])-1]['testResults']:
+            if test['name'] == file:
+                main_mess += ('Error details: '+test['error'] + '\n')
+        main_mess += ('Please send the results of your investigation in reply to this e-mail \n\n')
+        res = mailsender.send_email_smtp(main_mess, recep, sender, password)
+    
+    return HttpResponse(res)
