@@ -16,10 +16,10 @@ import imaplib
 import smtplib
 import couchdb
 
-IMAP_SERVER = 'imap..com'
+IMAP_SERVER = 'imap.slide.com'
 IMAP_SERVER_PORT = '993'
 IMAP_SERVER_TYPE = 'SSL'
-SMTP_SERVER = 'smtp..com'
+SMTP_SERVER = 'smtp.slide.com'
 SMTP_SERVER_PORT = '465'
 SMTP_SERVER_TYPE = 'SSL'
 

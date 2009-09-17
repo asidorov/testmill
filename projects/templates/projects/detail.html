@@ -154,16 +154,16 @@ limitations under the License.
 
 <div id="taskDialog" title="Send selected test cases for analyze to..." style="display:none;font-size:12px;">
   <div id="taskContent" style="overflow:auto, font-size:12px;">
-  <input type='checkbox' name='recepient' value='exapl@mail.com' />Alexey Sidorov<br/>
-  <input type='checkbox' name='recepient' value='exapl@mail.com' />Victor Korolkevich<br/>
-  <input type='checkbox' name = 'recepient' value='exapl@mail.com' />Alexander Chystyakov<br/>
+  <input type='checkbox' name='recepient' value='asidorov@slide.com' />Alexey Sidorov<br/>
+  <input type='checkbox' name='recepient' value='vkorolkevich@slide.com' />Victor Korolkevich<br/>
+  <input type='checkbox' name = 'recepient' value='achystyakov@slide.com' />Alexander Chystyakov<br/>
    or <br/>
   <input type='checkbox' value='testauthor' disabled='disabled'/>Tets's Author<br/>
   <p>Select e-mail account</p><br/>
   <select name="account">
-    <option value="exapl@mail.com">exapl@mail.com
-    <option value="exapl@mail.com" disabled='disabled' />exapl@mail.com
-    <option value="exapl@mail.com" disabled='disabled' />exapl@mail.com
+    <option value="asidorov@slide.com">asidorov@slide.com
+    <option value="vkorolkevich@slide.com" disabled='disabled' />vkorolkevich@slide.com
+    <option value="achystyakov@slide.com" disabled='disabled' />achystyakov@slide.com
   </select>
 
   <p>Input the password of the owners email</p>
@@ -314,7 +314,7 @@ limitations under the License.
   
   var newCase = function(){
      var z = $("#casesGrid").children().children().length;
-     var x = {id:z+1,assertion:'',name:"",status:"PASS",bugs:"",comments:''};
+     var x = {id:z+1,assertion:'',name:"",status:"PASS",bugs:"",comments:'', assignedPerson:'None'};
      $("#casesGrid").addRowData(z+1,x);
   };
   
@@ -401,6 +401,8 @@ var sendTask = function(){
                     password = $('#pwd').val();
                     $.post("/projects/send_task_email", { id: '{{ id }}', tests: tetsNames, recepients: recepients, sender: sender, password: password },  function(data){
                         alert(data);
+                        jQuery("#tbrGrid").trigger("reloadGrid");
+                        jQuery("#casesGrid").trigger("reloadGrid");
                     });
                 
                 
@@ -416,19 +418,13 @@ var sendTask = function(){
       
      
       //open source dialog
-    //$("#taskDialog")[0].innerHTML = 'selected test are'+s;
       $("#taskDialog")[0].style.display = "";
       $("#taskDialog").dialog('open');
-    
-     /*$.post("/projects/send_task", { id: "{{ id }}" },   function(data){ 
-        
-	  });*/
-    //alert (typeof(s));
 }
   
   //execute when loaded
 	$(function(){
-	  $('#detailTabs').tabs({ selected: 0 });
+	  $('#detailTabs').tabs({ selected: 1 });
 	  
 	  $.post("/projects/feed", { name: "{{ row.name }}" },   function(data){ 
 	    var blah = eval(data);
@@ -451,7 +447,7 @@ var sendTask = function(){
     $("#casesGrid").jqGrid({
         url:'/projects/get_cases?id={{ id }}', 
         datatype: "json",
-        colNames:['ID','Assertion','File','Bugs','Comments','Status', 'Current Status'],
+        colNames:['ID','Assertion','File','Bugs','Comments','Status', 'Current Status', 'Assigned Person'],
         colModel:[
             {name:'id',index:'id',align:"center", width:20},
             {name:'assertion',index:'assertion', sortable:false,editable: true,edittype:"textarea", editoptions:{rows:"5",cols:"25"}},
@@ -460,6 +456,7 @@ var sendTask = function(){
             {name:'comments',index:'comments',sortable:false,editable: true,edittype:"textarea", editoptions:{rows:"5",cols:"25"}},
             {name:'status',index:'status', width:55, align:"center", editable: true, edittype:"select", editoptions:{value:"NONE:NONE;PASSED:PASSED;FAILED:FAILED;BLOCKED:BLOCKED"}},
             {name:'currentStatus',index:'currentStatus', align:"center", width:55,sortable:false, editable: false},
+            {name:'assignedPerson',index:'assignedPerson', width:55, align:"center", editable: true},
         ],
         editurl: "/projects/save_cases?id={{ id }}",
         ondblClickRow: function(id){ 
@@ -479,14 +476,15 @@ var sendTask = function(){
     $("#tbrGrid").jqGrid({
         url:'/projects/get_tbr_cases?id={{ id }}', 
         datatype: "json",
-        colNames:['File','Bugs', 'Comments', 'Current Status', 'Age'],
+        colNames:['File','Bugs', 'Comments', 'Current Status', 'Age', 'Assigned Person'],
         colModel:[
         
             {name:'file',index:'file',editable: true},
         	{name:'bugs',index:'bugs', align:"center", width:50,sortable:false, editable: false},
             {name:'comments',index:'comments',sortable:false,editable: false},
             {name:'currentStatus',index:'currentStatus', align:"center", width:55,sortable:true, editable: false},
-            {name:'age',index:'age', align:"center", width:40,sortable:true, editable: false}
+            {name:'age',index:'age', align:"center", width:40,sortable:true, editable: false},
+            {name:'assignedPers',index:'assignedPers', align:"center", width:55,sortable:true, editable: false},
         ],
         loadComplete: hlStatus,
         multiselect: true, 

@@ -203,7 +203,7 @@ def get_cases(request):
                 currStatus = i['status']
         r_dict = {}
         r_dict['id'] = case['id']
-        r_dict['cell'] = [case['id'], case['assertion'], case['file'], case['bugs'], case['comments'], case['status'], currStatus]
+        r_dict['cell'] = [case['id'], case['assertion'], case['file'], case['bugs'], case['comments'], case['status'], currStatus, case['assignedPerson']]
         c_dict['rows'].append(r_dict)
             
     return HttpResponse(simplejson.dumps(c_dict))
@@ -285,7 +285,7 @@ def new(request):
             'cli':'',
             '.cases':None,
             'lastBuild':0,
-            '.statistic':None
+            '.statistic':None,
         })
         return HttpResponseRedirect(u"/projects/doc/%s/" % a)
     return render_to_response('projects/new.html',{'rows':docs})
@@ -387,13 +387,21 @@ def update_test_stat(request):
                         for case_run in cases_run:                         
                             for case in cases:
                                 fileName = case['file']
-                                fileName = fileName.replace(".py", "")                              
+                                fileName = fileName.replace(".py", "")  
                                 if (str(case_run['name']) == fileName):
+                                    try:
+                                        age = str(case_run['age'])
+                                    except:
+                                        age = 0
+                                    try:
+                                        error = str(case_run['errorStackTrace'])
+                                    except:
+                                        error = 'None'
                                     child = {
                                         'name': fileName,
                                         'status': str(case_run['status']),
-                                        'error': str(case_run['errorStackTrace']),
-                                        'age': case_run['age']
+                                        'error': error,
+                                        'age': age
                                     }
                                     results.append(child)
                         finalRes = {'buildNumber': i, 'testResults': results} 
@@ -480,8 +488,9 @@ def get_tbr_cases(request):
         for i in doc['.statistic'][len(doc['.statistic'])-1]['testResults']:
             if ((i['name'] == caseName) and ((i['status'] == 'FAILED') or (i['status']== 'REGRESSION'))):
                 r_dict = {}
+                print case['file']
                 r_dict['id'] = case['file']
-                r_dict['cell'] = [case['file'], case['bugs'], case['comments'], i['status'], i['age']]
+                r_dict['cell'] = [case['file'], case['bugs'], case['comments'], i['status'], i['age'], case['assignedPerson']]
                 c_dict['rows'].append(r_dict)
             
     return HttpResponse(simplejson.dumps(c_dict))
@@ -504,6 +513,7 @@ def send_task_email(request):
     print 'recepients=='+str(recepients)
     recep = []
     message = 'To: '
+    
     for i in range(0, len(recepients)-1):
         message += str((recepients[i]) + ', ')
         recep.append(recepients[i])
@@ -511,10 +521,10 @@ def send_task_email(request):
     recep.append(sender)
     message +=(sender + '\n')
     message += ('From: '+sender+ '\n')
-    message += ('Subject: Failure analyze task \n\n')
     for i in range(0, len(files)-1):
         file = files[i]
         main_mess = message
+        main_mess += ('Subject: Failure analyze task: '+file+' \n\n')
         main_mess += 'Hi there! \n'
         main_mess += ('Please review the following failured test case: '+ file + '\n')
         main_mess += ('Test project: '+doc['name'] + '\n')
@@ -527,5 +537,11 @@ def send_task_email(request):
                 main_mess += ('Error details: '+test['error'] + '\n')
         main_mess += ('Please send the results of your investigation in reply to this e-mail \n\n')
         res = mailsender.send_email_smtp(main_mess, recep, sender, password)
+        # Update the assigned person
+        for test in doc['.cases']:
+            fileN = test['file'].replace('.py', '')
+            if fileN == file:
+                test['assignedPerson'] = str(recepients[0])
+                docs[id] = doc
     
     return HttpResponse(res)
